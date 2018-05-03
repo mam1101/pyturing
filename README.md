@@ -1,5 +1,4 @@
 ## (Py)turing
-======
 
 (Py)turing is a programming language for simulating Turing Machines using a Python based interpreter.
 
