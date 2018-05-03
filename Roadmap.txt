@@ -1,0 +1,10 @@
+- Allow for storing tape states in a registry
+- Allowing for storing tape output in file
+- Allow for defining and storing tape state in predefined registry
+- Build along Von Nuemann arcitecture
+- Optimize compiler
+- Build in C instead of Python
+- Create an interactive command line IDE
+- Change verbose output for educational purposes
+- Allow for importing of modules
+- Allow for redifinitions using #define
