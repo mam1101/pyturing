@@ -43,7 +43,10 @@ END
 import sys
 
 DEBUG = True
+VERBOSE = False
+FINITE = False # Set to true only if you want a finite tape turing machine
 
+# Command structure
 START = 'start'
 SUB = 'sub '
 SUB_END = 'endsub'
@@ -55,26 +58,7 @@ POS = 'p '
 END = 'end'
 SUB_CALL = 'call ' # 2 call add 3 <-- if in state 2, call ADD, when done move to state 3
 COMMANDS = {'>>': 1, '<<': -1}
-DEFINE = '#define '
-INPUT = 'input'
-REGISTER_DEFINE = 'r '
-POINTER = '*'
-REGISTRY_STORE = 'store'
 
-
-memory_storage = {}
-
-def store_register(registry_name, tape_value):
-    if memory_storage.get(registry_name) is not None:
-        print 'WARNING: Overiding Registry {}'.format(memory_storage)
-    memory_storage.update({registry_name: tape_value})
-
-def get_register(registry_name):
-    if memory_storage.get(registry_name) is None:
-        print 'ERROR: Registry store does not exist'
-        return ''
-    else:
-        return memory_storage[registry_name]
 
 def log(cat, item, line_count):
     return 'Line {}: {}: {}'.format(line_count, cat, item)
@@ -242,6 +226,11 @@ def main(file_name='test.tm'):
         try:
             current_command = ''
             current_commands = master_command_dict[current_state]
+            if VERBOSE:
+                print '{}\n\tCurrent state: {}'.format('NEXT', current_state)
+                position_tape = ' ' * len(working_tape)
+                position_tape = position_tape[:current_tape_position] + '|' + position_tape[current_tape_position:]
+                print '\n\t{}\n\t{}\n'.format(working_tape, position_tape)
             #print current_commands
             if current_commands.get('call') is not None:
                 #print 'Sub Machine started'
@@ -250,14 +239,21 @@ def main(file_name='test.tm'):
                 current_machine = submachine_list[current_commands.get('call')[0]]
                 current_machine_state = int(current_machine['state_list'][0])
                 current_machine_commands = current_machine['commands']
+                if VERBOSE: print '-------------------------------\nSub Machine {} started\n-------------------------------'.format(current_commands.get('call')[0])
                 sub_started = True
                 while sub_started:
+                    if VERBOSE:
+                        print '{}\n\tCurrent submachine state: {}'.format('NEXT', current_machine_state)
+                        position_tape = ' ' * len(working_tape)
+                        position_tape = position_tape[:current_tape_position] + '|' + position_tape[current_tape_position:]
+                        print '\n\t{}\n\t{}\n'.format(working_tape, position_tape)
                     tape_value = working_tape[current_tape_position]
                     if DEBUG: print 'WK: {}'.format(working_tape)
                     if DEBUG: print 'TP: {}'.format(tape_value)
                     if DEBUG: print 'MS: {}'.format(current_machine_state)
                     try:
                         current_command = current_machine_commands[current_machine_state][tape_value][0]
+                        if VERBOSE: print '\tCurrent command: {}'.format(current_command)
                         if DEBUG: print 'SUB CC: {}'.format(current_command)
                         if not '>>' in current_command and not '<<' in current_command:
                             if not '_' in current_command:
@@ -271,11 +267,13 @@ def main(file_name='test.tm'):
                     except KeyError as e:
                         if DEBUG: print(e)
                         sub_started = False
+                        if VERBOSE: print '-------------------------------\nEND SUB MACHINE\n-------------------------------'
             else:
                 tape_value = working_tape[current_tape_position]
                 if DEBUG: print "TAPE: {}".format(tape_value)
                 current_command = current_commands[tape_value][0]
                 if DEBUG: print 'CC: {}'.format(current_command)
+                if VERBOSE: print '\tCurrent command: {}'.format(current_command)
                 if not '>>' in current_command and not '<<' in current_command:
                     if current_command is not '_':
                         working_tape = working_tape[0:current_tape_position] + current_command + working_tape[current_tape_position+1:]
@@ -289,6 +287,17 @@ def main(file_name='test.tm'):
             break
         except IndexError as e:
             if DEBUG: print(e)
+            if DEBUG: print(current_tape_position)
+            if current_tape_position <= 0:
+                if DEBUG: print("Went Behind")
+                working_tape = '_' + working_tape
+            elif current_tape_position >= len(working_tape):
+                if DEBUG: print("Went Ahead")
+                working_tape += '_'
+
+            if FINITE: break
+        except KeyboardInterrupt:
+            if DEBUG: print('Manual Interupt')
             break
 
     print 'End Tape:\t\t{}'.format(working_tape)
