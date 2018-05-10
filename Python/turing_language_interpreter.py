@@ -41,10 +41,15 @@ END
 """
 
 import sys
+import time
+# import package
+import shutil
 
-DEBUG = True
+DEBUG = False
 VERBOSE = False
 FINITE = False # Set to true only if you want a finite tape turing machine
+
+DELAY_TIME = 0.5
 
 # Command structure
 START = 'start'
@@ -59,6 +64,7 @@ END = 'end'
 SUB_CALL = 'call ' # 2 call add 3 <-- if in state 2, call ADD, when done move to state 3
 COMMANDS = {'>>': 1, '<<': -1}
 
+COMPILE_DIRECTORY = "compiled/"
 
 def log(cat, item, line_count):
     return 'Line {}: {}: {}'.format(line_count, cat, item)
@@ -71,8 +77,11 @@ def is_number(s):
         return False
     
 def main(file_name='test.tm'):
+    new_file_name = COMPILE_DIRECTORY + file_name
 
-    f = file(file_name, 'rb')
+    shutil.copyfile(file_name, new_file_name)
+
+    f = file(new_file_name, 'rb')
 
     current_tape_position = 0
     current_tape = ''
@@ -88,7 +97,7 @@ def main(file_name='test.tm'):
     master_state_list = []
     master_command_dict = {}
     line_count = 1
-    
+
     for current_line in f:
         if current_line.startswith('//'):
             continue
@@ -286,20 +295,27 @@ def main(file_name='test.tm'):
             if DEBUG: print(e)
             break
         except IndexError as e:
-            if DEBUG: print(e)
-            if DEBUG: print(current_tape_position)
-            if current_tape_position <= 0:
-                if DEBUG: print("Went Behind")
-                working_tape = '_' + working_tape
-            elif current_tape_position >= len(working_tape):
-                if DEBUG: print("Went Ahead")
-                working_tape += '_'
+            try:
+                if DEBUG: print(e)
+                if DEBUG: print(current_tape_position)
+                if current_tape_position <= 0:
+                    if DEBUG: print("Went Behind")
+                    working_tape = '_' + working_tape
+                elif current_tape_position >= len(working_tape):
+                    if DEBUG: print("Went Ahead")
+                    working_tape += '_'
 
-            if FINITE: break
+                if FINITE: break
+            except KeyboardInterrupt:
+                if DEBUG: print('Manual Interupt')
+                break
         except KeyboardInterrupt:
             if DEBUG: print('Manual Interupt')
             break
-
+        try:
+            if VERBOSE: time.sleep(DELAY_TIME)
+        except KeyboardInterrupt:
+            break
     print 'End Tape:\t\t{}'.format(working_tape)
         
 
