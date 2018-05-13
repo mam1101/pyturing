@@ -12,3 +12,6 @@ Roadmap:
   - Build a debugger/improved syntax checker
   - Allow for register storage and tape writing
   - Command line interface for dynamic, non compiled (Py)turing code
+
+Turing's "Thesis":
+From "On Computable Numbers": It is possible to create a single computing machine which can be used to compute any computable sequence.
