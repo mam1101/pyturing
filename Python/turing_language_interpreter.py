@@ -138,34 +138,45 @@ def main(file_name='test.tm'):
                     print log('Error', 'Command found before tape defined', line_count)
                     return
                 #print 'Command found'
-                if master_command_dict.get(int(line[0:line.find(' ')])) is not None:
-                    #print 'Already Command'
-                    if not line.endswith(';'):
-                        print log('Error', 'Command does not end with a \';\': {}'.format(line), line_count)
-                        return
-                    line = line.replace(';', '')
-                    split_line = line.split(' ')
-                    if len(split_line) > 4:
-                        print log('Error', 'Command has too many arguments: {}'.format(line), line_count)
-                        return
-                    if len(split_line) < 4:
-                        print log('Error', 'Command has too few arguments: {}'.format(line), line_count)
-                        return
-                    master_command_dict[int(line[0:line.find(' ')])][split_line[1]] = split_line[2:len(split_line)]
-                else:
-                    if not line.endswith(';'):
-                        print log('Error', 'Command does not end with a \';\': {}'.format(line), line_count)
-                        return
-                    line = line.replace(';', '')
-                    split_line = line.split(' ')
-                    if len(split_line) > 4:
-                        print log('Error', 'Command has too many arguments: {}'.format(line), line_count)
-                        return
-                    if len(split_line) < 4:
-                        print log('Error', 'Command has too few arguments: {}'.format(line), line_count)
-                        return
-                    master_command_dict.update({int(line[0:line.find(' ')]): {split_line[1]: split_line[2:len(split_line)]}})
-                    
+                try:
+                    if master_command_dict.get(int(line[0:line.find(' ')])) is not None:
+                        #print 'Already Command'
+                        if not line.endswith(';'):
+                            print log('Error', 'Command does not end with a \';\': {}'.format(line), line_count)
+                            return
+                        line = line.replace(';', '')
+                        split_line = line.split(' ')
+                        if len(split_line) > 4:
+                            print log('Error', 'Command has too many arguments: {}'.format(line), line_count)
+                            return
+                        if len(split_line) < 4:
+                            print log('Error', 'Command has too few arguments: {}'.format(line), line_count)
+                            return
+                        try:
+                            master_command_dict[int(line[0:line.find(' ')])][split_line[1]] = split_line[2:len(split_line)]
+                        except ValueError:
+                            print log("Error", 'Command has state which is not an integer: {}'.format(line), line_count)
+                            return 
+                    else:
+                        if not line.endswith(';'):
+                            print log('Error', 'Command does not end with a \';\': {}'.format(line), line_count)
+                            return
+                        line = line.replace(';', '')
+                        split_line = line.split(' ')
+                        if len(split_line) > 4:
+                            print log('Error', 'Command has too many arguments: {}'.format(line), line_count)
+                            return
+                        if len(split_line) < 4:
+                            print log('Error', 'Command has too few arguments: {}'.format(line), line_count)
+                            return
+                        try:
+                            master_command_dict.update({int(line[0:line.find(' ')]): {split_line[1]: split_line[2:len(split_line)]}})
+                        except ValueError:
+                            print log("Error", 'Command has state which is not an integer: {}'.format(line), line_count)
+                            return 
+                except ValueError:
+                    print log("Error", 'Command has state which is not an integer: {}'.format(line), line_count)
+                    return
         else:
             if line.startswith('\t' + STATE_LIST):
                 line = line.replace(STATE_LIST, '')
