@@ -41,9 +41,17 @@ END
 """
 
 import sys
+import time
+# import package
+import shutil
 
-DEBUG = True
+DEBUG = False
+VERBOSE = False
+FINITE = False # Set to true only if you want a finite tape turing machine
 
+DELAY_TIME = 0.5
+
+# Command structure
 START = 'start'
 SUB = 'sub '
 SUB_END = 'endsub'
@@ -55,26 +63,8 @@ POS = 'p '
 END = 'end'
 SUB_CALL = 'call ' # 2 call add 3 <-- if in state 2, call ADD, when done move to state 3
 COMMANDS = {'>>': 1, '<<': -1}
-DEFINE = '#define '
-INPUT = 'input'
-REGISTER_DEFINE = 'r '
-POINTER = '*'
-REGISTRY_STORE = 'store'
 
-
-memory_storage = {}
-
-def store_register(registry_name, tape_value):
-    if memory_storage.get(registry_name) is not None:
-        print 'WARNING: Overiding Registry {}'.format(memory_storage)
-    memory_storage.update({registry_name: tape_value})
-
-def get_register(registry_name):
-    if memory_storage.get(registry_name) is None:
-        print 'ERROR: Registry store does not exist'
-        return ''
-    else:
-        return memory_storage[registry_name]
+COMPILE_DIRECTORY = "compiled/"
 
 def log(cat, item, line_count):
     return 'Line {}: {}: {}'.format(line_count, cat, item)
@@ -87,8 +77,11 @@ def is_number(s):
         return False
     
 def main(file_name='test.tm'):
+    new_file_name = COMPILE_DIRECTORY + file_name
 
-    f = file(file_name, 'rb')
+    shutil.copyfile(file_name, new_file_name)
+
+    f = file(new_file_name, 'rb')
 
     current_tape_position = 0
     current_tape = ''
@@ -104,7 +97,7 @@ def main(file_name='test.tm'):
     master_state_list = []
     master_command_dict = {}
     line_count = 1
-    
+
     for current_line in f:
         if current_line.startswith('//'):
             continue
@@ -145,34 +138,45 @@ def main(file_name='test.tm'):
                     print log('Error', 'Command found before tape defined', line_count)
                     return
                 #print 'Command found'
-                if master_command_dict.get(int(line[0:line.find(' ')])) is not None:
-                    #print 'Already Command'
-                    if not line.endswith(';'):
-                        print log('Error', 'Command does not end with a \';\': {}'.format(line), line_count)
-                        return
-                    line = line.replace(';', '')
-                    split_line = line.split(' ')
-                    if len(split_line) > 4:
-                        print log('Error', 'Command has too many arguments: {}'.format(line), line_count)
-                        return
-                    if len(split_line) < 4:
-                        print log('Error', 'Command has too few arguments: {}'.format(line), line_count)
-                        return
-                    master_command_dict[int(line[0:line.find(' ')])][split_line[1]] = split_line[2:len(split_line)]
-                else:
-                    if not line.endswith(';'):
-                        print log('Error', 'Command does not end with a \';\': {}'.format(line), line_count)
-                        return
-                    line = line.replace(';', '')
-                    split_line = line.split(' ')
-                    if len(split_line) > 4:
-                        print log('Error', 'Command has too many arguments: {}'.format(line), line_count)
-                        return
-                    if len(split_line) < 4:
-                        print log('Error', 'Command has too few arguments: {}'.format(line), line_count)
-                        return
-                    master_command_dict.update({int(line[0:line.find(' ')]): {split_line[1]: split_line[2:len(split_line)]}})
-                    
+                try:
+                    if master_command_dict.get(int(line[0:line.find(' ')])) is not None:
+                        #print 'Already Command'
+                        if not line.endswith(';'):
+                            print log('Error', 'Command does not end with a \';\': {}'.format(line), line_count)
+                            return
+                        line = line.replace(';', '')
+                        split_line = line.split(' ')
+                        if len(split_line) > 4:
+                            print log('Error', 'Command has too many arguments: {}'.format(line), line_count)
+                            return
+                        if len(split_line) < 4:
+                            print log('Error', 'Command has too few arguments: {}'.format(line), line_count)
+                            return
+                        try:
+                            master_command_dict[int(line[0:line.find(' ')])][split_line[1]] = split_line[2:len(split_line)]
+                        except ValueError:
+                            print log("Error", 'Command has state which is not an integer: {}'.format(line), line_count)
+                            return 
+                    else:
+                        if not line.endswith(';'):
+                            print log('Error', 'Command does not end with a \';\': {}'.format(line), line_count)
+                            return
+                        line = line.replace(';', '')
+                        split_line = line.split(' ')
+                        if len(split_line) > 4:
+                            print log('Error', 'Command has too many arguments: {}'.format(line), line_count)
+                            return
+                        if len(split_line) < 4:
+                            print log('Error', 'Command has too few arguments: {}'.format(line), line_count)
+                            return
+                        try:
+                            master_command_dict.update({int(line[0:line.find(' ')]): {split_line[1]: split_line[2:len(split_line)]}})
+                        except ValueError:
+                            print log("Error", 'Command has state which is not an integer: {}'.format(line), line_count)
+                            return 
+                except ValueError:
+                    print log("Error", 'Command has state which is not an integer: {}'.format(line), line_count)
+                    return
         else:
             if line.startswith('\t' + STATE_LIST):
                 line = line.replace(STATE_LIST, '')
@@ -242,6 +246,11 @@ def main(file_name='test.tm'):
         try:
             current_command = ''
             current_commands = master_command_dict[current_state]
+            if VERBOSE:
+                print '{}\n\tCurrent state: {}'.format('NEXT', current_state)
+                position_tape = ' ' * len(working_tape)
+                position_tape = position_tape[:current_tape_position] + '|' + position_tape[current_tape_position:]
+                print '\n\t{}\n\t{}\n'.format(working_tape, position_tape)
             #print current_commands
             if current_commands.get('call') is not None:
                 #print 'Sub Machine started'
@@ -250,14 +259,21 @@ def main(file_name='test.tm'):
                 current_machine = submachine_list[current_commands.get('call')[0]]
                 current_machine_state = int(current_machine['state_list'][0])
                 current_machine_commands = current_machine['commands']
+                if VERBOSE: print '-------------------------------\nSub Machine {} started\n-------------------------------'.format(current_commands.get('call')[0])
                 sub_started = True
                 while sub_started:
+                    if VERBOSE:
+                        print '{}\n\tCurrent submachine state: {}'.format('NEXT', current_machine_state)
+                        position_tape = ' ' * len(working_tape)
+                        position_tape = position_tape[:current_tape_position] + '|' + position_tape[current_tape_position:]
+                        print '\n\t{}\n\t{}\n'.format(working_tape, position_tape)
                     tape_value = working_tape[current_tape_position]
                     if DEBUG: print 'WK: {}'.format(working_tape)
                     if DEBUG: print 'TP: {}'.format(tape_value)
                     if DEBUG: print 'MS: {}'.format(current_machine_state)
                     try:
                         current_command = current_machine_commands[current_machine_state][tape_value][0]
+                        if VERBOSE: print '\tCurrent command: {}'.format(current_command)
                         if DEBUG: print 'SUB CC: {}'.format(current_command)
                         if not '>>' in current_command and not '<<' in current_command:
                             if not '_' in current_command:
@@ -271,11 +287,13 @@ def main(file_name='test.tm'):
                     except KeyError as e:
                         if DEBUG: print(e)
                         sub_started = False
+                        if VERBOSE: print '-------------------------------\nEND SUB MACHINE\n-------------------------------'
             else:
                 tape_value = working_tape[current_tape_position]
                 if DEBUG: print "TAPE: {}".format(tape_value)
                 current_command = current_commands[tape_value][0]
                 if DEBUG: print 'CC: {}'.format(current_command)
+                if VERBOSE: print '\tCurrent command: {}'.format(current_command)
                 if not '>>' in current_command and not '<<' in current_command:
                     if current_command is not '_':
                         working_tape = working_tape[0:current_tape_position] + current_command + working_tape[current_tape_position+1:]
@@ -288,9 +306,27 @@ def main(file_name='test.tm'):
             if DEBUG: print(e)
             break
         except IndexError as e:
-            if DEBUG: print(e)
-            break
+            try:
+                if DEBUG: print(e)
+                if DEBUG: print(current_tape_position)
+                if current_tape_position <= 0:
+                    if DEBUG: print("Went Behind")
+                    working_tape = '_' + working_tape
+                elif current_tape_position >= len(working_tape):
+                    if DEBUG: print("Went Ahead")
+                    working_tape += '_'
 
+                if FINITE: break
+            except KeyboardInterrupt:
+                if DEBUG: print('Manual Interupt')
+                break
+        except KeyboardInterrupt:
+            if DEBUG: print('Manual Interupt')
+            break
+        try:
+            if VERBOSE: time.sleep(DELAY_TIME)
+        except KeyboardInterrupt:
+            break
     print 'End Tape:\t\t{}'.format(working_tape)
         
 
