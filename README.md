@@ -5,6 +5,8 @@
 Updates:
 1.0 (5/3/2018)
   - Formally released repository; Added a basic interpreter built in Python which processes finite tape Turing Machines.
+1.1 (5/13/2018)
+- Added documentation and more formal syntax checking for the general Unicode interpreter. Started work on the compiled version.
 
 Roadmap:
   - Build a compiler for (Py)turing in C
