@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ## (Py)turing
 
 (Py)turing is a programming language for simulating Turing Machines using a Python based interpreter.
@@ -33,4 +32,3 @@ Roadmap:
 
 Turing's "Thesis":
 From "On Computable Numbers": It is possible to create a single computing machine which can be used to compute any computable sequence.
->>>>>>> 936ab58bf49b00d93af54a91ce8bc1c8847deea1
